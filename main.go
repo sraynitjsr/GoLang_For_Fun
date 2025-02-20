@@ -14,12 +14,24 @@ var (
 	mu          sync.Mutex
 )
 
+type ResponseMessage string
+
+const (
+	RateLimitExceeded ResponseMessage = "Please come later, let me take rest 😅🙏"
+)
+
 func helloWorld(w http.ResponseWriter, r *http.Request) {
 	mu.Lock()
 	defer mu.Unlock()
 
 	now := time.Now()
+	date := now.Format("02/01/2006")
+	timestamp := now.Format("15:04:05")
+
+	fmt.Printf("\nDate: %s, Timestamp: %s\n", date, timestamp)
+
 	var newRequests []time.Time
+
 	for _, timestamp := range requests {
 		if now.Sub(timestamp) <= interval {
 			newRequests = append(newRequests, timestamp)
@@ -29,11 +41,13 @@ func helloWorld(w http.ResponseWriter, r *http.Request) {
 	requests = newRequests
 
 	if len(requests) >= maxRequests {
-		http.Error(w, "Please come later, let me take rest 😅🙏", http.StatusTooManyRequests)
+		fmt.Printf("Date: %s, Timestamp: %s, Response: %s\n", date, timestamp, RateLimitExceeded)
+		http.Error(w, string(RateLimitExceeded), http.StatusTooManyRequests)
 		return
 	}
 
 	requests = append(requests, now)
+
 	fmt.Fprintln(w, "Hello World!")
 }
 
